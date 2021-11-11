@@ -1,0 +1,12 @@
+{
+  "name": "FrictionRampApp",
+  "displayName": "FrictionRampApp",
+  "expo": {
+    "name": "FrictionRampApp",
+    "slug": "FrictionRampApp",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
