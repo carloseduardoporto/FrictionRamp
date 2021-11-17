@@ -58,11 +58,13 @@
         "jsx": "never"
       }
     ]
+
 },
   "settings": {
     "import/resolver": {
       "node": {
-        "extensions": [".js", ".ts", ".tsx", ".native.js"]
+        "extensions": [".js", ".ts", ".tsx", ".native.js"],
+        "moduleDirectory": ["node_modules", "src/"]
       },
       "typescript": {}
     }
