@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   View,
@@ -9,18 +9,39 @@ import {
   Text,
   StyleSheet,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Entypo';
 import Icon2 from 'react-native-vector-icons/Feather';
+import { onAuthStateChanged, getAuth } from '@firebase/auth';
+import { getDatabase, ref, onValue, get, child } from 'firebase/database';
 import fonts from '../styles/fonts';
 import colors from '../styles/colors';
+import firebase, { fireStore } from '../config/firebase';
+
+interface materialsProps {
+  id: number;
+  name: string;
+}
 
 export function TestArea() {
-  const materials = [
+  const [selectedMaterial, setSelectedMaterial] = useState();
+  const [stopFeedback, setStopFeedback] = useState();
+  const [buttonsDisable, setButtonDisable] = useState(false);
+  const [rampOperating, setRampOperating] = useState(true);
+  const [angle, setAngle] = useState(40);
+
+  function getTangent(angleMesured: number): string {
+    const tangent = Math.tan((angleMesured * Math.PI) / 180).toPrecision(2);
+
+    return tangent;
+  }
+
+  const materials: materialsProps[] = [
     {
       id: 1,
-      name: 'EVGA',
+      name: 'EVA',
     },
     {
       id: 2,
@@ -32,11 +53,44 @@ export function TestArea() {
     },
   ];
 
-  const [selectedMaterial, setSelectedMaterial] = useState();
+  useEffect(() => {
+    const auth = getAuth();
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        const { uid } = user;
+        console.log(uid);
+      } else {
+        // User is signed out
+        // ...
+      }
+    });
+  }, [angle]);
 
-  console.log(selectedMaterial);
+  const handleSubir = async () => {
+    // setButtonSubirDisable(!buttonSubirDisable);
+    const stopFeedbackDatabaseRefference = ref(getDatabase(firebase));
 
-  const tangent = '60';
+    // verificar valor de "operando"
+    get(child(stopFeedbackDatabaseRefference, 'operando'))
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          setRampOperating(Boolean(snapshot.val()));
+          console.log(rampOperating);
+        } else {
+          console.log('No data available');
+        }
+      })
+      .catch(error => {
+        console.error(error);
+      });
+
+    if (!rampOperating) {
+      // mudar para true no firebase
+      // mudar rampasobe para on
+      // buttonsdisable para on
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView style={styles.container}>
@@ -45,7 +99,11 @@ export function TestArea() {
         </View>
         <View style={styles.commandContainer}>
           <View style={styles.subirContent}>
-            <TouchableOpacity style={styles.subirButton}>
+            <TouchableOpacity
+              style={styles.subirButton}
+              onPress={handleSubir}
+              disabled={buttonsDisable}
+            >
               <Icon name="chevron-with-circle-up" size={64} />
             </TouchableOpacity>
             <Text style={styles.subirButtonText}>Subir</Text>
@@ -66,12 +124,26 @@ export function TestArea() {
         <View style={styles.footContainer}>
           <View style={styles.angleContainer}>
             <Text style={styles.headingText}>Ângulo</Text>
-            <Text style={styles.angleHeadingText}>30º</Text>
+
+            {rampOperating ? (
+              <Text style={styles.angleHeadingText}>{angle}</Text>
+            ) : (
+              <ActivityIndicator
+                size="large"
+                color={colors.red}
+                style={{ marginTop: 20 }}
+              />
+            )}
           </View>
           <View>
-            <Text
-              style={styles.tangentButtonText}
-            >{`Tangente: ${tangent}`}</Text>
+            {rampOperating ? (
+              <Text style={styles.tangentButtonText}>{`Tangente: ${getTangent(
+                angle,
+              )}`}</Text>
+            ) : (
+              <ActivityIndicator size="large" color={colors.red} />
+            )}
+
             <Picker
               selectedValue={selectedMaterial}
               onValueChange={itemValue => setSelectedMaterial(itemValue)}
@@ -118,6 +190,7 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: colors.light_red,
   },
   // subir
   subirContent: {
@@ -179,6 +252,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 24,
     fontFamily: fonts.text,
+    color: colors.heading,
     borderBottomWidth: 1,
     borderBottomColor: colors.red,
   },
@@ -194,7 +268,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
   },
   materialsList: {
-    color: colors.green_dark,
+    color: colors.heading,
     fontFamily: fonts.complement,
   },
   saveButtonText: {
