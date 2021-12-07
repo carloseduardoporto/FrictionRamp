@@ -21,7 +21,7 @@ import { RootStackParamList } from '../routes/stack.routes';
 // criar usuario com firebase
 // logar usuario com firebase
 // enviar senha por email
-type loginScreen = StackNavigationProp<RootStackParamList, 'Login'>;
+type loginScreen = StackNavigationProp<RootStackParamList>;
 
 export function CreateAccount() {
   const [email, setEmail] = useState<string>('');

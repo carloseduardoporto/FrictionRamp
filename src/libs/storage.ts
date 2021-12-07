@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface SampleProps {
   id: string;
+  user_id: string;
   angle: string;
   tgt: string;
   material: string;
@@ -16,7 +17,7 @@ export interface StorageSampleProps {
 
 export async function saveSample(sample: SampleProps): Promise<void> {
   try {
-    const data = await AsyncStorage.getItem('@frictionramp:samples');
+    const data = await AsyncStorage.getItem(`${sample.user_id}:samples`);
     const oldSamples = data ? (JSON.parse(data) as StorageSampleProps) : {};
 
     const newSample = {
@@ -25,18 +26,18 @@ export async function saveSample(sample: SampleProps): Promise<void> {
       },
     };
     await AsyncStorage.setItem(
-      '@frictionramp:samples',
+      `${sample.user_id}:samples`,
       JSON.stringify({ ...newSample, ...oldSamples }),
     );
     console.log(newSample);
-  } catch (error) {
-    throw new Error(error);
+  } catch {
+    throw new Error('Erro ao salvar ensaio');
   }
 }
 
-export async function loadSamples(): Promise<SampleProps[]> {
+export async function loadSamples(user_id: string): Promise<SampleProps[]> {
   try {
-    const data = await AsyncStorage.getItem('@frictionramp:samples');
+    const data = await AsyncStorage.getItem(`${user_id}:samples`);
     const samples = data ? (JSON.parse(data) as StorageSampleProps) : {};
 
     const samplesSorted = Object.keys(samples).map(plant => ({
@@ -45,17 +46,17 @@ export async function loadSamples(): Promise<SampleProps[]> {
 
     console.log(samplesSorted);
     return samplesSorted;
-  } catch (error) {
-    throw new Error(error);
+  } catch {
+    throw new Error('Erro ao carregar Ensaios');
   }
 }
 
-export async function removeSample(id: string): Promise<void> {
-  const data = await AsyncStorage.getItem('@frictionramp:samples');
+export async function removeSample(id: string, user_id: string): Promise<void> {
+  const data = await AsyncStorage.getItem(`${user_id}:samples`);
 
   const samples = data ? (JSON.parse(data) as StorageSampleProps) : {};
 
   delete samples[id];
 
-  await AsyncStorage.setItem('@frictionramp:samples', JSON.stringify(samples));
+  await AsyncStorage.setItem(`${user_id}:samples`, JSON.stringify(samples));
 }

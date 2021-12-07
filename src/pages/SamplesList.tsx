@@ -1,3 +1,4 @@
+import { useRoute } from '@react-navigation/core';
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -13,12 +14,19 @@ import { loadSamples, removeSample, SampleProps } from '../libs/storage';
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
 
+interface Params {
+  userId: string;
+}
+
 export function SamplesList() {
   const [samples, setSamples] = useState<SampleProps[]>([]);
+  const routes = useRoute();
+
+  const { userId } = routes.params as Params;
 
   useEffect(() => {
     async function loadData() {
-      const data = await loadSamples();
+      const data = await loadSamples(userId);
 
       setSamples(data);
 
@@ -38,7 +46,7 @@ export function SamplesList() {
         text: 'Sim',
         onPress: async () => {
           try {
-            await removeSample(sample.id);
+            await removeSample(sample.id, userId);
 
             setSamples(oldData =>
               oldData.filter(item => item.id !== sample.id),

@@ -27,7 +27,7 @@ import firebase from '../config/firebase';
 import { loadSamples, SampleProps, saveSample } from '../libs/storage';
 import { RootStackParamList } from '../routes/stack.routes';
 
-type loginScreen = StackNavigationProp<RootStackParamList>;
+type loginScreen = StackNavigationProp<RootStackParamList, 'SamplesList'>;
 
 export function TestArea() {
   const navigation = useNavigation<loginScreen>();
@@ -39,6 +39,20 @@ export function TestArea() {
   const [rampOperating, setRampOperating] = useState(true);
   const [angle, setAngle] = useState(40);
   const [tgt, setTgt] = useState<string>('');
+  const [userId, setUserId] = useState('');
+
+  useEffect(() => {
+    const auth = getAuth();
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        const { uid } = user;
+        console.log(uid);
+        setUserId(uid);
+      } else {
+        navigation.navigate('Login');
+      }
+    });
+  }, []);
 
   const getTangent = useMemo(() => {
     const tangent = Math.tan((angle * Math.PI) / 180).toPrecision(2);
@@ -57,6 +71,7 @@ export function TestArea() {
       const data: SampleProps = {
         id: uuidv4(),
         tgt,
+        user_id: userId,
         angle: String(angle),
         material: selectedMaterial,
         created_at: parsedDate,
@@ -71,7 +86,7 @@ export function TestArea() {
   };
 
   const handleMoveToSamplesList = () => {
-    navigation.navigate('SamplesList');
+    navigation.navigate('SamplesList', { userId });
   };
 
   const materials = [
@@ -92,19 +107,6 @@ export function TestArea() {
       name: 'LIXA 100',
     },
   ];
-
-  useEffect(() => {
-    const auth = getAuth();
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        const { uid } = user;
-        console.log(uid);
-      } else {
-        // User is signed out
-        // ...
-      }
-    });
-  }, []);
 
   const handleSubir = async () => {
     const databaseReference = ref(getDatabase(firebase));

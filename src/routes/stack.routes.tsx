@@ -10,10 +10,10 @@ export type RootStackParamList = {
   Login: undefined;
   CreateAccount: undefined;
   TestArea: undefined;
-  SamplesList: undefined;
+  SamplesList: { userId: string | undefined };
 };
 
-export const stackRoutes = createStackNavigator();
+export const stackRoutes = createStackNavigator<RootStackParamList>();
 
 const AppRoutes: React.FC = () => (
   <stackRoutes.Navigator
