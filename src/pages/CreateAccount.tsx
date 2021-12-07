@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Feather';
@@ -39,6 +40,7 @@ export function CreateAccount() {
           const { user } = userCredential;
 
           console.log(user);
+          Alert.alert('Sucesso', 'Conta criada com sucesso!');
           navigation.navigate('Login');
         })
         .catch((error: { message: React.SetStateAction<string> }) => {

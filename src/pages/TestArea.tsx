@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
+import { v4 as uuidv4 } from 'uuid';
 import {
   View,
   TouchableOpacity,
@@ -10,35 +11,74 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { format, parseISO } from 'date-fns';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Entypo';
 import Icon2 from 'react-native-vector-icons/Feather';
 import { onAuthStateChanged, getAuth } from '@firebase/auth';
-import { getDatabase, ref, onValue, get, child } from 'firebase/database';
+import { getDatabase, ref, get, child, onValue } from 'firebase/database';
+import { useNavigation } from '@react-navigation/core';
+import { StackNavigationProp } from '@react-navigation/stack';
 import fonts from '../styles/fonts';
 import colors from '../styles/colors';
-import firebase, { fireStore } from '../config/firebase';
+import firebase from '../config/firebase';
+import { loadSamples, SampleProps, saveSample } from '../libs/storage';
+import { RootStackParamList } from '../routes/stack.routes';
 
-interface materialsProps {
-  id: number;
-  name: string;
-}
+type loginScreen = StackNavigationProp<RootStackParamList>;
 
 export function TestArea() {
-  const [selectedMaterial, setSelectedMaterial] = useState();
+  const navigation = useNavigation<loginScreen>();
+  const [samples, setSamples] = useState<SampleProps[]>([]);
+
+  const [selectedMaterial, setSelectedMaterial] = useState('EVA');
   const [stopFeedback, setStopFeedback] = useState();
   const [buttonsDisable, setButtonDisable] = useState(false);
   const [rampOperating, setRampOperating] = useState(true);
   const [angle, setAngle] = useState(40);
+  const [tgt, setTgt] = useState<string>('');
 
-  function getTangent(angleMesured: number): string {
-    const tangent = Math.tan((angleMesured * Math.PI) / 180).toPrecision(2);
+  const getTangent = useMemo(() => {
+    const tangent = Math.tan((angle * Math.PI) / 180).toPrecision(2);
+
+    setTgt(tangent);
 
     return tangent;
-  }
+  }, [angle]);
 
-  const materials: materialsProps[] = [
+  const handleSave = async () => {
+    try {
+      const date = new Date();
+
+      const parsedDate = format(date, 'Pp');
+
+      const data: SampleProps = {
+        id: uuidv4(),
+        tgt,
+        angle: String(angle),
+        material: selectedMaterial,
+        created_at: parsedDate,
+      };
+
+      await saveSample(data);
+
+      Alert.alert('Sucesso', 'Ensaio salvo com sucesso!');
+    } catch {
+      Alert.alert('Não foi possível salvar');
+    }
+  };
+
+  const handleMoveToSamplesList = () => {
+    navigation.navigate('SamplesList');
+  };
+
+  const materials = [
+    {
+      id: 4,
+      name: '-',
+    },
     {
       id: 1,
       name: 'EVA',
@@ -64,38 +104,42 @@ export function TestArea() {
         // ...
       }
     });
-  }, [angle]);
+  }, []);
 
   const handleSubir = async () => {
-    // setButtonSubirDisable(!buttonSubirDisable);
-    const stopFeedbackDatabaseRefference = ref(getDatabase(firebase));
+    const databaseReference = ref(getDatabase(firebase));
+    const db = getDatabase(firebase);
+    // get(child(databaseReference, 'angulo'))
+    //   .then(snapshot => {
+    //     if (snapshot.exists()) {
+    //       setAngle(snapshot.val());
+    //       console.log(angle);
+    //     } else {
+    //       console.log('No data available');
+    //     }
+    //   })
+    //   .catch(error => {
+    //     console.error(error);
+    //   });
 
-    // verificar valor de "operando"
-    get(child(stopFeedbackDatabaseRefference, 'operando'))
-      .then(snapshot => {
-        if (snapshot.exists()) {
-          setRampOperating(Boolean(snapshot.val()));
-          console.log(rampOperating);
-        } else {
-          console.log('No data available');
-        }
-      })
-      .catch(error => {
-        console.error(error);
-      });
-
-    if (!rampOperating) {
-      // mudar para true no firebase
-      // mudar rampasobe para on
-      // buttonsdisable para on
-    }
+    const starCountRef = ref(db, 'angulo');
+    onValue(starCountRef, snapshot => {
+      const data = snapshot.val();
+      setAngle(snapshot.val());
+    });
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView style={styles.container}>
         <View style={styles.headContainer}>
-          <Text>RODAPÉ</Text>
+          <Text style={styles.headTitle}>MENU OPERACIONAL</Text>
+          <TouchableOpacity
+            style={styles.headButton}
+            onPress={handleMoveToSamplesList}
+          >
+            <Text style={styles.headButtonText}>Ir para Ensaios</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.commandContainer}>
           <View style={styles.subirContent}>
@@ -137,13 +181,13 @@ export function TestArea() {
           </View>
           <View>
             {rampOperating ? (
-              <Text style={styles.tangentButtonText}>{`Tangente: ${getTangent(
-                angle,
-              )}`}</Text>
+              <Text style={styles.tangentButtonText}>
+                Tangent: {getTangent}
+              </Text>
             ) : (
               <ActivityIndicator size="large" color={colors.red} />
             )}
-
+            <Text style={styles.materialTitleText}>Material:</Text>
             <Picker
               selectedValue={selectedMaterial}
               onValueChange={itemValue => setSelectedMaterial(itemValue)}
@@ -157,7 +201,12 @@ export function TestArea() {
                 />
               ))}
             </Picker>
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.6}>
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              activeOpacity={0.6}
+              onPress={handleSave}
+            >
               <Text style={styles.saveButtonText}>Salvar Ensaio</Text>
             </TouchableOpacity>
           </View>
@@ -176,11 +225,31 @@ const styles = StyleSheet.create({
   },
 
   headContainer: {
-    backgroundColor: 'green',
     height: 140,
     width: '100%',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.red,
     justifyContent: 'center',
+  },
+  headTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    color: colors.red,
+  },
+  headButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.red,
+    borderRadius: 50,
+    width: 180,
+    marginTop: 50,
+    marginLeft: 200,
+  },
+  headButtonText: {
+    fontSize: 24,
+    fontFamily: fonts.text,
+    color: colors.shape,
   },
 
   // meio
@@ -190,7 +259,9 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.light_red,
+    borderBottomWidth: 2,
+
+    borderBottomColor: colors.red,
   },
   // subir
   subirContent: {
@@ -201,8 +272,9 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   subirButtonText: {
-    fontFamily: fonts.heading,
+    fontFamily: fonts.complement,
     fontSize: 24,
+    color: colors.heading,
   },
 
   // parar
@@ -214,8 +286,9 @@ const styles = StyleSheet.create({
     marginRight: 17,
   },
   pararButtonText: {
-    fontFamily: fonts.heading,
+    fontFamily: fonts.complement,
     fontSize: 24,
+    color: colors.heading,
   },
 
   // descer
@@ -227,8 +300,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   descerButtonText: {
-    fontFamily: fonts.heading,
+    fontFamily: fonts.complement,
     fontSize: 24,
+    color: colors.heading,
   },
 
   footContainer: {
@@ -246,12 +320,12 @@ const styles = StyleSheet.create({
   },
   headingText: {
     fontSize: 24,
-    fontFamily: fonts.heading,
+    fontFamily: fonts.complement,
   },
   angleHeadingText: {
     marginTop: 20,
     fontSize: 24,
-    fontFamily: fonts.text,
+    fontFamily: fonts.complement,
     color: colors.heading,
     borderBottomWidth: 1,
     borderBottomColor: colors.red,
@@ -265,7 +339,13 @@ const styles = StyleSheet.create({
   },
   tangentButtonText: {
     fontSize: 20,
-    fontFamily: fonts.heading,
+    fontFamily: fonts.complement,
+  },
+  materialTitleText: {
+    fontSize: 20,
+
+    fontFamily: fonts.complement,
+    color: colors.heading,
   },
   materialsList: {
     color: colors.heading,
@@ -274,6 +354,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 24,
     fontFamily: fonts.text,
+    color: colors.shape,
   },
 });
 
