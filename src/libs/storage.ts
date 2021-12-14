@@ -6,6 +6,7 @@ export interface SampleProps {
   angle: string;
   tgt: string;
   material: string;
+  superficie: string;
   created_at: string;
 }
 
@@ -29,7 +30,6 @@ export async function saveSample(sample: SampleProps): Promise<void> {
       `${sample.user_id}:samples`,
       JSON.stringify({ ...newSample, ...oldSamples }),
     );
-    console.log(newSample);
   } catch {
     throw new Error('Erro ao salvar ensaio');
   }
@@ -44,7 +44,6 @@ export async function loadSamples(user_id: string): Promise<SampleProps[]> {
       ...samples[plant].data,
     }));
 
-    console.log(samplesSorted);
     return samplesSorted;
   } catch {
     throw new Error('Erro ao carregar Ensaios');

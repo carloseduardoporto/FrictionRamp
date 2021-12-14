@@ -73,6 +73,8 @@ export function SamplesList() {
               tgt={item.tgt}
               angle={item.angle}
               material={item.material}
+              created_at={item.created_at}
+              superficie={item.superficie}
               id={item.id}
               handleRemove={() => handleRemove(item)}
             />

@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Entypo';
 import Icon2 from 'react-native-vector-icons/Feather';
@@ -33,7 +33,8 @@ export function TestArea() {
   const navigation = useNavigation<loginScreen>();
   const [samples, setSamples] = useState<SampleProps[]>([]);
 
-  const [selectedMaterial, setSelectedMaterial] = useState('EVA');
+  const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [selectedSuperficie, setSelectedSuperficie] = useState('');
   const [stopFeedback, setStopFeedback] = useState();
   const [buttonsDisable, setButtonDisable] = useState(false);
   const [rampOperating, setRampOperating] = useState(true);
@@ -75,6 +76,7 @@ export function TestArea() {
         angle: String(angle),
         material: selectedMaterial,
         created_at: parsedDate,
+        superficie: selectedSuperficie,
       };
 
       await saveSample(data);
@@ -108,27 +110,41 @@ export function TestArea() {
     },
   ];
 
+  const superficies = [
+    {
+      id: 1,
+      name: 'Máxima',
+    },
+    {
+      id: 2,
+      name: 'Mínima',
+    },
+  ];
+
   const handleSubir = async () => {
     const databaseReference = ref(getDatabase(firebase));
     const db = getDatabase(firebase);
-    // get(child(databaseReference, 'angulo'))
-    //   .then(snapshot => {
-    //     if (snapshot.exists()) {
-    //       setAngle(snapshot.val());
-    //       console.log(angle);
-    //     } else {
-    //       console.log('No data available');
-    //     }
-    //   })
-    //   .catch(error => {
-    //     console.error(error);
-    //   });
 
-    const starCountRef = ref(db, 'angulo');
-    onValue(starCountRef, snapshot => {
-      const data = snapshot.val();
-      setAngle(snapshot.val());
-    });
+    setButtonDisable(true);
+    setRampOperating(!rampOperating);
+
+    setTimeout(
+      () =>
+        get(child(databaseReference, 'angulo'))
+          .then(snapshot => {
+            if (snapshot.exists()) {
+              setAngle(snapshot.val());
+              setRampOperating(true);
+              setButtonDisable(false);
+            } else {
+              console.log('No data available');
+            }
+          })
+          .catch(error => {
+            console.error(error);
+          }),
+      6000,
+    );
   };
 
   return (
@@ -180,8 +196,6 @@ export function TestArea() {
                 style={{ marginTop: 20 }}
               />
             )}
-          </View>
-          <View>
             {rampOperating ? (
               <Text style={styles.tangentButtonText}>
                 Tangent: {getTangent}
@@ -189,6 +203,8 @@ export function TestArea() {
             ) : (
               <ActivityIndicator size="large" color={colors.red} />
             )}
+          </View>
+          <View>
             <Text style={styles.materialTitleText}>Material:</Text>
             <Picker
               selectedValue={selectedMaterial}
@@ -200,6 +216,19 @@ export function TestArea() {
                   label={material.name}
                   value={material.name}
                   key={material.id}
+                />
+              ))}
+            </Picker>
+            <Picker
+              selectedValue={selectedSuperficie}
+              onValueChange={itemValue => setSelectedSuperficie(itemValue)}
+              style={styles.superficieList}
+            >
+              {superficies.map(superficie => (
+                <Picker.Item
+                  label={superficie.name}
+                  value={superficie.name}
+                  key={superficie.id}
                 />
               ))}
             </Picker>
@@ -310,7 +339,7 @@ const styles = StyleSheet.create({
   footContainer: {
     alignItems: 'center',
     width: '100%',
-    height: 150,
+    height: 190,
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 25,
@@ -340,6 +369,7 @@ const styles = StyleSheet.create({
     width: 180,
   },
   tangentButtonText: {
+    marginTop: 10,
     fontSize: 20,
     fontFamily: fonts.complement,
   },
@@ -350,6 +380,10 @@ const styles = StyleSheet.create({
     color: colors.heading,
   },
   materialsList: {
+    color: colors.heading,
+    fontFamily: fonts.complement,
+  },
+  superficieList: {
     color: colors.heading,
     fontFamily: fonts.complement,
   },

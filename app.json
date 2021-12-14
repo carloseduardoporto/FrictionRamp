@@ -7,6 +7,13 @@
     "version": "1.0.0",
     "assetBundlePatterns": [
       "**/*"
-    ]
+    ],
+    "android": {
+      "package": "com.pudim.FrictionRampApp"
+    }
+  },
+  "android": {
+    "package": "com.carlosporto.FrictionRamp",
+    "versionCode": 1
   }
 }

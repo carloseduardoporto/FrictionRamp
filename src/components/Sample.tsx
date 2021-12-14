@@ -8,18 +8,30 @@ interface Props {
   angle: string;
   tgt: string;
   material: string;
+  superficie: string;
   id: string;
+  created_at: string;
   handleRemove: () => void;
 }
 
-function Sample({ angle, tgt, material, id, handleRemove }: Props) {
+function Sample({
+  angle,
+  tgt,
+  material,
+  id,
+  superficie,
+  created_at,
+  handleRemove,
+}: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.textContainer}>
         <View>
+          <Text style={styles.txt3}>Data: {created_at}</Text>
           <Text style={styles.txt3}>Material: {material}</Text>
           <Text style={styles.txt1}>Ângulo: {angle}º</Text>
           <Text style={styles.txt2}>Tangente: {tgt}</Text>
+          <Text style={styles.txt2}>Superfície: {superficie}</Text>
         </View>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={handleRemove}>
@@ -75,6 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
     borderRadius: 50,
     width: 120,
+    marginLeft: 50,
   },
 });
 
